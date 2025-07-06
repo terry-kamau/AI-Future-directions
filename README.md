@@ -1,4 +1,4 @@
-# 🤖 AI Future Directions – PLP Academy Assignment
+# 🤖 AI Future Directions – GROUP 94
 
 ## 📘 Overview
 This assignment explores how Artificial Intelligence continues to evolve within software engineering. It presents forward-thinking solutions, examines emerging technologies, and highlights how AI can transform development workflows and ethical decision-making.
