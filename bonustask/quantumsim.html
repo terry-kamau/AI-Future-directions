@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Computing Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00d4ff, #5b86e5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #a0a0a0;
+            margin-bottom: 40px;
+            font-size: 1.2em;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .card h2 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .circuit-canvas {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #00d4ff;
+            border-radius: 10px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .circuit-canvas:hover {
+            border-color: #5b86e5;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #00d4ff, #5b86e5);
+            border: none;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .results {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            border-left: 4px solid #00d4ff;
+        }
+
+        .probability-bar {
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+
+        .probability-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #5b86e5);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .optimization-demo {
+            grid-column: 1 / -1;
+        }
+
+        .molecule-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .molecule {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .molecule:hover {
+            background: rgba(0, 212, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .molecule.selected {
+            background: rgba(0, 212, 255, 0.3);
+            border-color: #00d4ff;
+        }
+
+        .speedup-meter {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .meter {
+            flex: 1;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .meter-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcf7f, #00d4ff);
+            transition: width 1s ease;
+            border-radius: 15px;
+        }
+
+        .meter-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            color: #000;
+            text-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Quantum Computing Simulation</h1>
+        <p class="subtitle">Exploring Quantum Advantage in AI Drug Discovery</p>
+        
+        <div class="grid">
+            <div class="card">
+                <h2>Quantum Circuit Builder</h2>
+                <p>Build and simulate quantum circuits with superposition and entanglement:</p>
+                <canvas id="circuitCanvas" class="circuit-canvas" width="400" height="200"></canvas>
+                <div class="controls">
+                    <button class="btn" onclick="addHadamard()">Add H Gate</button>
+                    <button class="btn" onclick="addCNOT()">Add CNOT</button>
+                    <button class="btn" onclick="addPauli()">Add Pauli-X</button>
+                    <button class="btn" onclick="runCircuit()">Run Circuit</button>
+                    <button class="btn" onclick="clearCircuit()">Clear</button>
+                </div>
+                <div class="results" id="quantumResults">
+                    <strong>Quantum State:</strong><br>
+                    Click "Run Circuit" to see quantum measurement results
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Measurement Results</h2>
+                <p>Quantum measurement outcomes showing probability distributions:</p>
+                <div id="measurementResults">
+                    <div style="margin: 10px 0;">
+                        <strong>|00⟩ state:</strong>
+                        <div class="probability-bar">
+                            <div class="probability-fill" id="prob00" style="width: 0%"></div>
+                        </div>
+                        <span id="prob00Text">0%</span>
+                    </div>
+                    <div style="margin: 10px 0;">
+                        <strong>|01⟩ state:</strong>
+                        <div class="probability-bar">
+                            <div class="probability-fill" id="prob01" style="width: 0%"></div>
+                        </div>
+                        <span id="prob01Text">0%</span>
+                    </div>
+                    <div style="margin: 10px 0;">
+                        <strong>|10⟩ state:</strong>
+                        <div class="probability-bar">
+                            <div class="probability-fill" id="prob10" style="width: 0%"></div>
+                        </div>
+                        <span id="prob10Text">0%</span>
+                    </div>
+                    <div style="margin: 10px 0;">
+                        <strong>|11⟩ state:</strong>
+                        <div class="probability-bar">
+                            <div class="probability-fill" id="prob11" style="width: 0%"></div>
+                        </div>
+                        <span id="prob11Text">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card optimization-demo">
+                <h2>Drug Discovery Optimization Demo</h2>
+                <p>Simulate how quantum computing could accelerate molecular optimization for drug discovery:</p>
+                
+                <div class="molecule-grid" id="moleculeGrid">
+                    <!-- Molecules will be populated by JavaScript -->
+                </div>
+                
+                <div class="controls">
+                    <button class="btn" onclick="runClassicalOptimization()">Classical Search</button>
+                    <button class="btn" onclick="runQuantumOptimization()">Quantum Search</button>
+                    <button class="btn" onclick="resetOptimization()">Reset</button>
+                </div>
+                
+                <div class="speedup-meter">
+                    <span>Speedup: </span>
+                    <div class="meter">
+                        <div class="meter-fill" id="speedupFill" style="width: 0%"></div>
+                        <div class="meter-label" id="speedupLabel">1x</div>
+                    </div>
+                </div>
+                
+                <div class="results" id="optimizationResults">
+                    <strong>Optimization Results:</strong><br>
+                    Select a search method to find optimal molecular configurations
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Quantum Circuit Simulation
+        class QuantumCircuit {
+            constructor(qubits = 2) {
+                this.qubits = qubits;
+                this.gates = [];
+                this.state = this.createInitialState();
+            }
+
+            createInitialState() {
+                const size = Math.pow(2, this.qubits);
+                const state = new Array(size).fill(0);
+                state[0] = 1; // |00⟩ state
+                return state;
+            }
+
+            addHadamard(qubit) {
+                this.gates.push({type: 'H', qubit: qubit});
+            }
+
+            addCNOT(control, target) {
+                this.gates.push({type: 'CNOT', control: control, target: target});
+            }
+
+            addPauliX(qubit) {
+                this.gates.push({type: 'X', qubit: qubit});
+            }
+
+            simulate() {
+                this.state = this.createInitialState();
+                
+                for (let gate of this.gates) {
+                    if (gate.type === 'H') {
+                        this.applyHadamard(gate.qubit);
+                    } else if (gate.type === 'CNOT') {
+                        this.applyCNOT(gate.control, gate.target);
+                    } else if (gate.type === 'X') {
+                        this.applyPauliX(gate.qubit);
+                    }
+                }
+                
+                return this.getProbabilities();
+            }
+
+            applyHadamard(qubit) {
+                const newState = new Array(this.state.length).fill(0);
+                const factor = 1 / Math.sqrt(2);
+                
+                for (let i = 0; i < this.state.length; i++) {
+                    if (this.state[i] !== 0) {
+                        const flipped = i ^ (1 << qubit);
+                        newState[i] += factor * this.state[i];
+                        newState[flipped] += factor * this.state[i];
+                    }
+                }
+                
+                this.state = newState;
+            }
+
+            applyCNOT(control, target) {
+                const newState = [...this.state];
+                
+                for (let i = 0; i < this.state.length; i++) {
+                    if (this.state[i] !== 0) {
+                        if ((i >> control) & 1) {
+                            const flipped = i ^ (1 << target);
+                            newState[i] = 0;
+                            newState[flipped] = this.state[i];
+                        }
+                    }
+                }
+                
+                this.state = newState;
+            }
+
+            applyPauliX(qubit) {
+                const newState = new Array(this.state.length).fill(0);
+                
+                for (let i = 0; i < this.state.length; i++) {
+                    if (this.state[i] !== 0) {
+                        const flipped = i ^ (1 << qubit);
+                        newState[flipped] = this.state[i];
+                    }
+                }
+                
+                this.state = newState;
+            }
+
+            getProbabilities() {
+                return this.state.map(amplitude => Math.abs(amplitude) ** 2);
+            }
+        }
+
+        // Circuit visualization
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        const circuit = new QuantumCircuit(2);
+
+        function drawCircuit() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw qubit lines
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            ctx.moveTo(50, 60);
+            ctx.lineTo(350, 60);
+            ctx.moveTo(50, 140);
+            ctx.lineTo(350, 140);
+            ctx.stroke();
+            
+            // Draw qubit labels
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '16px Arial';
+            ctx.fillText('q0', 20, 65);
+            ctx.fillText('q1', 20, 145);
+            
+            // Draw gates
+            let x = 80;
+            for (let gate of circuit.gates) {
+                if (gate.type === 'H') {
+                    drawHadamard(x, gate.qubit === 0 ? 60 : 140);
+                } else if (gate.type === 'CNOT') {
+                    drawCNOT(x, gate.control === 0 ? 60 : 140, gate.target === 0 ? 60 : 140);
+                } else if (gate.type === 'X') {
+                    drawPauliX(x, gate.qubit === 0 ? 60 : 140);
+                }
+                x += 60;
+            }
+        }
+
+        function drawHadamard(x, y) {
+            ctx.fillStyle = '#5b86e5';
+            ctx.fillRect(x - 15, y - 15, 30, 30);
+            ctx.strokeStyle = '#ffffff';
+            ctx.strokeRect(x - 15, y - 15, 30, 30);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('H', x, y + 5);
+        }
+
+        function drawCNOT(x, controlY, targetY) {
+            // Control
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(x, controlY, 5, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Connection line
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x, controlY);
+            ctx.lineTo(x, targetY);
+            ctx.stroke();
+            
+            // Target
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, targetY, 12, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x - 8, targetY);
+            ctx.lineTo(x + 8, targetY);
+            ctx.moveTo(x, targetY - 8);
+            ctx.lineTo(x, targetY + 8);
+            ctx.stroke();
+        }
+
+        function drawPauliX(x, y) {
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(x - 15, y - 15, 30, 30);
+            ctx.strokeStyle = '#ffffff';
+            ctx.strokeRect(x - 15, y - 15, 30, 30);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('X', x, y + 5);
+        }
+
+        function addHadamard() {
+            circuit.addHadamard(0);
+            drawCircuit();
+        }
+
+        function addCNOT() {
+            circuit.addCNOT(0, 1);
+            drawCircuit();
+        }
+
+        function addPauli() {
+            circuit.addPauliX(0);
+            drawCircuit();
+        }
+
+        function runCircuit() {
+            const probabilities = circuit.simulate();
+            updateProbabilities(probabilities);
+            
+            const results = document.getElementById('quantumResults');
+            results.innerHTML = `
+                <strong>Quantum State Probabilities:</strong><br>
+                |00⟩: ${(probabilities[0] * 100).toFixed(1)}%<br>
+                |01⟩: ${(probabilities[1] * 100).toFixed(1)}%<br>
+                |10⟩: ${(probabilities[2] * 100).toFixed(1)}%<br>
+                |11⟩: ${(probabilities[3] * 100).toFixed(1)}%<br>
+                <br><strong>Gates applied:</strong> ${circuit.gates.length}
+            `;
+        }
+
+        function clearCircuit() {
+            circuit.gates = [];
+            circuit.state = circuit.createInitialState();
+            drawCircuit();
+            updateProbabilities([1, 0, 0, 0]);
+            document.getElementById('quantumResults').innerHTML = 'Circuit cleared. Ready for new gates.';
+        }
+
+        function updateProbabilities(probs) {
+            const states = ['00', '01', '10', '11'];
+            for (let i = 0; i < 4; i++) {
+                const percentage = (probs[i] * 100).toFixed(1);
+                document.getElementById(`prob${states[i]}`).style.width = percentage + '%';
+                document.getElementById(`prob${states[i]}Text`).textContent = percentage + '%';
+            }
+        }
+
+        // Drug Discovery Optimization Demo
+        const molecules = [
+            {name: 'Aspirin', binding: 0.3, toxicity: 0.2, synthesis: 0.8},
+            {name: 'Penicillin', binding: 0.9, toxicity: 0.1, synthesis: 0.4},
+            {name: 'Morphine', binding: 0.8, toxicity: 0.7, synthesis: 0.3},
+            {name: 'Caffeine', binding: 0.4, toxicity: 0.3, synthesis: 0.9},
+            {name: 'Ibuprofen', binding: 0.6, toxicity: 0.2, synthesis: 0.7},
+            {name: 'Compound X', binding: 0.95, toxicity: 0.05, synthesis: 0.85},
+            {name: 'Compound Y', binding: 0.7, toxicity: 0.4, synthesis: 0.6},
+            {name: 'Compound Z', binding: 0.5, toxicity: 0.3, synthesis: 0.8}
+        ];
+
+        function initializeMolecules() {
+            const grid = document.getElementById('moleculeGrid');
+            grid.innerHTML = '';
+            
+            molecules.forEach((mol, index) => {
+                const div = document.createElement('div');
+                div.className = 'molecule';
+                div.innerHTML = `
+                    <strong>${mol.name}</strong><br>
+                    Binding: ${(mol.binding * 100).toFixed(0)}%<br>
+                    Safe: ${((1 - mol.toxicity) * 100).toFixed(0)}%<br>
+                    Synthesis: ${(mol.synthesis * 100).toFixed(0)}%
+                `;
+                div.onclick = () => selectMolecule(index);
+                grid.appendChild(div);
+            });
+        }
+
+        function selectMolecule(index) {
+            const mols = document.querySelectorAll('.molecule');
+            mols.forEach((mol, i) => {
+                mol.classList.toggle('selected', i === index);
+            });
+        }
+
+        function calculateScore(mol) {
+            return mol.binding * 0.5 + (1 - mol.toxicity) * 0.3 + mol.synthesis * 0.2;
+        }
+
+        function runClassicalOptimization() {
+            const results = document.getElementById('optimizationResults');
+            results.innerHTML = '<strong>Classical Optimization Running...</strong><br>Searching through molecules sequentially...';
+            
+            let bestMol = null;
+            let bestScore = -1;
+            let searchTime = 0;
+            
+            molecules.forEach((mol, index) => {
+                setTimeout(() => {
+                    const score = calculateScore(mol);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMol = mol;
+                    }
+                    
+                    selectMolecule(index);
+                    
+                    if (index === molecules.length - 1) {
+                        setTimeout(() => {
+                            results.innerHTML = `
+                                <strong>Classical Search Complete:</strong><br>
+                                Best molecule: ${bestMol.name}<br>
+                                Score: ${(bestScore * 100).toFixed(1)}%<br>
+                                Time: ${molecules.length * 100}ms<br>
+                                Molecules evaluated: ${molecules.length}
+                            `;
+                            updateSpeedupMeter(1);
+                        }, 100);
+                    }
+                }, index * 100);
+            });
+        }
+
+        function runQuantumOptimization() {
+            const results = document.getElementById('optimizationResults');
+            results.innerHTML = '<strong>Quantum Optimization Running...</strong><br>Using quantum superposition to search multiple states simultaneously...';
+            
+            // Simulate quantum advantage with Grover's algorithm
+            const quantumTime = Math.ceil(Math.sqrt(molecules.length)) * 50;
+            const bestMol = molecules.reduce((best, mol) => 
+                calculateScore(mol) > calculateScore(best) ? mol : best
+            );
+            
+            setTimeout(() => {
+                const speedup = (molecules.length * 100) / quantumTime;
+                results.innerHTML = `
+                    <strong>Quantum Search Complete:</strong><br>
+                    Best molecule: ${bestMol.name}<br>
+                    Score: ${(calculateScore(bestMol) * 100).toFixed(1)}%<br>
+                    Time: ${quantumTime}ms<br>
+                    Quantum speedup: ${speedup.toFixed(1)}x faster<br>
+                    <br><em>Real quantum computers could search molecular configurations exponentially faster using quantum superposition and entanglement.</em>
+                `;
+                updateSpeedupMeter(speedup);
+                
+                // Highlight best molecule
+                const bestIndex = molecules.indexOf(bestMol);
+                selectMolecule(bestIndex);
+            }, quantumTime);
+        }
+
+        function resetOptimization() {
+            document.querySelectorAll('.molecule').forEach(mol => mol.classList.remove('selected'));
+            document.getElementById('optimizationResults').innerHTML = 'Select a search method to find optimal molecular configurations';
+            updateSpeedupMeter(1);
+        }
+
+        function updateSpeedupMeter(speedup) {
+            const maxSpeedup = 10;
+            const percentage = Math.min((speedup / maxSpeedup) * 100, 100);
+            document.getElementById('speedupFill').style.width = percentage + '%';
+            document.getElementById('speedupLabel').textContent = speedup.toFixed(1) + 'x';
+        }
+
+        // Initialize
+        drawCircuit();
+        initializeMolecules();
+        updateProbabilities([1, 0, 0, 0]);
+    </script>
+</body>
+</html>
